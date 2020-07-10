@@ -1,0 +1,14 @@
+<launch>
+
+    <!-- publisher node -->
+    <node pkg = "topic_tutorial_2" type = "pub_node1.py" name = "pub_node1" />
+
+    <!-- subscriber node -->
+    <node pkg = "topic_tutorial_2" type = "sub_node1.py" name = "sub_node1" />
+    <node pkg = "topic_tutorial_2" type = "sub_node2.py" name = "sub_node2" />
+    <node pkg = "topic_tutorial_2" type = "sub_node3.py" name = "sub_node3" />
+
+    <!-- visualisation with rqt -->
+    <node name = "rqt_gui" pkg = "rqt_gui" type = "rqt_gui"/>
+
+</launch>
