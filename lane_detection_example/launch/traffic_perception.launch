@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<launch>
+
+    <node pkg = "lane_detetion_example" type = "lane_detector.py" name = "lane_detector">
+    </node>
+    <node pkg = "lane_detetion_example" type = "stopline_detector.py" name = "stopline_detector">
+    </node>
+    <node pkg = "lane_detetion_example" type = "traffic_detector.py" name = "traffic_detector">
+    </node>
+
+</launch>
