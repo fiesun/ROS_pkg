@@ -13,6 +13,8 @@ from std_msgs.msg import Float64
 
 from utils import warp_image, BEVTransform, CURVEFit, draw_lane_img, purePursuit, STOPLineEstimator
 
+is_in_lane = 0
+
 
 class IMGParser:
     def __init__(self):
@@ -28,6 +30,8 @@ class IMGParser:
 
         self.img_wlane = None
 
+        self.speed_value = True
+
     def callback(self, msg):
         try:
             np.arr = np.fromstring(msg.data, np.uint8)
@@ -35,11 +39,18 @@ class IMGParser:
         except CvBridgeError as e:
             print(e)
 
-        img_hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
+        img_gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
+        ret, self.img_wlane = cv2.threshold(
+            img_gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
 
-        lower_wlane = np.array([20, 0, 255])
-        upper_wlane = np.array([35, 15, 255])
-        self.img_wlane = cv2.inRange(img_hsv, lower_wlane, upper_wlane)
+        # cv2.imshow("Image window",  self.img_wlane)
+        # cv2.waitKey(1)
+
+
+def park_callback(msg):
+    global is_in_lane
+    is_in_lane = msg.data
+    print(is_in_lane)
 
 
 if __name__ == '__main__':
@@ -55,14 +66,24 @@ if __name__ == '__main__':
 
     rospy.init_node("lane_detector", anonymous=True)
 
+    park_sub = rospy.Subscriber("/park/state", Float64, park_callback)
+
     image_parser = IMGParser()
     bev_op = BEVTransform(params_cam=params_cam)
 
-    curve_learner = CURVEFit(order=1)
+    curve_learner = CURVEFit(order=3)
+
+    ctrller = purePursuit(lfd=0.7)
 
     rate = rospy.Rate(20)
+    is_init = False
 
     while not rospy.is_shutdown():
+        if is_init == False and is_in_lane == 1:
+            is_init = True
+            image_parser = IMGParser()
+            bev_op = BEVTransform(params_cam=params_cam)
+            curve_learner = CURVEFit(order=3)
 
         if image_parser.img_wlane is not None:
 
@@ -70,6 +91,9 @@ if __name__ == '__main__':
             lane_pts = bev_op.recon_lane_pts(image_parser.img_wlane)
 
             x_pred, y_pred_l, y_pred_r = curve_learner.fit_curve(lane_pts)
+
+            ctrller.steering_angle(x_pred, y_pred_l, y_pred_r)
+            ctrller.pub_cmd()
 
             curve_learner.write_path_msg(x_pred, y_pred_l, y_pred_r)
 

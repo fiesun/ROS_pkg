@@ -46,6 +46,7 @@ class simple_controller:
                 count_l += 1
             elif point.x > 0 and point.x < 3 and point.y > -0.7 and point.y < 0:
                 count_r += 1
+            
 
         if count_l > 10:
             servo_msg.data = 0.85
@@ -60,7 +61,7 @@ class simple_controller:
             servo_msg.data = 0.5304
             motor_msg.data = 3000
         
-        print(count_l, count_r)
+        print(count_l, count_r, point.x, point.y)
 
         self.motor_pub.publish(motor_msg)
         self.servo_pub.publish(servo_msg)

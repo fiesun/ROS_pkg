@@ -428,11 +428,11 @@ class purePursuit:
         self.max_lfd = 1.2
 
         self.speed_pub = rospy.Publisher(
-            '/commands/motor/speed', Float64, queue_size=1)
+            '/ln/commands/motor/speed', Float64, queue_size=1)
         self.position_pub = rospy.Publisher(
-            '/commands/servo/position', Float64, queue_size=1)
+            '/ln/commands/servo/position', Float64, queue_size=1)
 
-        self.speed_value = 2500
+        self.speed_value = 2000
 
     def steering_angle(self, x_pred, y_pred_l, y_pred_r):
 
@@ -462,7 +462,7 @@ class purePursuit:
             print(self.steering)
             return self.steering
         else:
-            self.steering = 0
+            self.steering = 0.5304
             print("no found forward point")
             return self.steering
 

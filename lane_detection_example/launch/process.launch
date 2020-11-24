@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<launch>
+
+    <node pkg = "lane_detection_example" type = "lane_detector.py" name = "lane_detector">
+    </node>
+    <node pkg = "lane_detection_example" type = "parking_guardrail.py" name = "parking_guardrail">
+    </node>
+    <node pkg = "lane_detection_example" type = "process.py" name = "process">
+    </node>
+
+</launch>

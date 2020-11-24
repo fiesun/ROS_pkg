@@ -14,11 +14,15 @@ from math import atan2, pow, sqrt, pi
 
 def proj_coef_0(e):
     c0_transverse_mercator = np.array([
-        [-175 / 16384.0, 0.0,  -5 / 2560.0, 0.0, -3 / 64.0 , 0.0, -1 / 4.0, 0.0, 1.0],
-        [-105 / 40960.0, 0.0, -45 / 1024.0, 0.0, -3 / 32.0 , 0.0, -3 / 8.0, 0.0, 0.0],
-        [ 525 / 16384.0, 0.0,  45 / 1024.0, 0.0, 15 / 256.0, 0.0,      0.0, 0.0, 0.0],
-        [-175 / 12288.0, 0.0, -35 / 3072.0, 0.0,    /   0.0  0.0,      0.0, 0.0, 0.0],
-        [315 / 131072.0, 0.0,          0.0, 0.0,        0.0, 0.0,      0.0, 0.0, 0.0],
+        [-175 / 16384.0, 0.0,  -5 / 2560.0, 0.0, -
+            3 / 64.0, 0.0, -1 / 4.0, 0.0, 1.0],
+        [-105 / 40960.0, 0.0, -45 / 1024.0, 0.0, -
+            3 / 32.0, 0.0, -3 / 8.0, 0.0, 0.0],
+        [525 / 16384.0, 0.0,  45 / 1024.0, 0.0,
+            15 / 256.0, 0.0,      0.0, 0.0, 0.0],
+        [-175 / 12288.0, 0.0, -35 / 3072.0, 0.0,       0.0  0.0,      0.0, 0.0, 0.0],
+        [315 / 131072.0, 0.0,          0.0, 0.0,
+            0.0, 0.0,      0.0, 0.0, 0.0],
     ])
 
     c_out = np.zeros(5)
@@ -31,11 +35,14 @@ def proj_coef_0(e):
 
 def proj_coef_2(e):
     c0_merdian_arc = np.array([
-        [-175 / 16384.0     , 0.0, -5 / 256.0  , 0.0, -3 / 64.0 , 0.0, -1 / 4.0, 0.0, 1.0],
-        [-901 / 184320.0    , 0.0, -9 / 1024.0 , 0.0, -1 / 96.0 , 0.0,  1 / 8.0, 0.0, 0.0],
-        [-311 / 737280.0    , 0.0, 17 / 5120.0 , 0.0, 13 / 768.0, 0.0,      0.0, 0.0, 0.0],
-        [899 / 430080.0     , 0.0, 61 / 15360.0, 0.0,    /   0.0  0.0,      0.0, 0.0, 0.0],
-        [ 49561 / 41287680.0, 0.0,          0.0, 0.0,        0.0, 0.0,      0.0, 0.0, 0.0],
+        [-175 / 16384.0, 0.0, -5 / 256.0, 0.0, -3 / 64.0, 0.0, -1 / 4.0, 0.0, 1.0],
+        [-901 / 184320.0, 0.0, -9 / 1024.0, 0.0, -
+            1 / 96.0, 0.0,  1 / 8.0, 0.0, 0.0],
+        [-311 / 737280.0, 0.0, 17 / 5120.0, 0.0,
+            13 / 768.0, 0.0,      0.0, 0.0, 0.0],
+        [899 / 430080.0, 0.0, 61 / 15360.0, 0.0,    /   0.0  0.0,      0.0, 0.0, 0.0],
+        [49561 / 41287680.0, 0.0,          0.0,
+            0.0,        0.0, 0.0,      0.0, 0.0, 0.0],
     ])
 
     c_out = np.zeros(5)
@@ -141,6 +148,20 @@ class LocationSensor:
 
             x, y = e_global - e_o, n_global - n_o
 
+            dx = x - self.prev_x
+            dy = y - self.prev_y
+            dis = sqrt(dx*dx + dy*dy)
+
+            if dis > 0.02:
+                heading = atan2(dy, dx)
+                self.prev_x = x
+                self.prev_y = y
+
+            else:
+                heading = self.prev_heading
+
+            q = tf.transformations.quaternion_from_euler(0, 0, heading)
+
             odom_msg = Odometry()
             odom_msg.child_frame_id = 'base_link'
             odom_msg.header.frame_id = 'map'
@@ -148,11 +169,20 @@ class LocationSensor:
             odom_msg.pose.pose.position.x = x
             odom_msg.pose.pose.position.y = y
             odom_msg.pose.pose.position.z = 0
-            odom_msg.pose.pose.orientation.x = 0
-            odom_msg.pose.pose.orientation.y = 0
-            odom_msg.pose.pose.orientation.z = 0
-            odom_msg.pose.pose.orientation.w = 1
+            odom_msg.pose.pose.orientation.x = q[1]
+            odom_msg.pose.pose.orientation.y = q[2]
+            odom_msg.pose.pose.orientation.z = q[3]
+            odom_msg.pose.pose.orientation.w = q[4]
             self.odom_pub.Publish(odom_msg)
+
+            br = tf.TransformBroadcaster()
+            br.sendTransform((x, y, 0),
+                             q,
+                             rospy.Time.now(),
+                             "base_link",
+                             "map")
+
+            self.prev_heading = heading
 
 
 if __name__ == '__main__':
